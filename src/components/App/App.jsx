@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { GlobalStyle } from '../GlobalStyle';
@@ -10,80 +10,73 @@ import Button from 'components/Button';
 import Loader from 'components/Loader';
 import { toast } from 'react-toastify';
 
-class App extends Component {
-  state = {
-    query: '',
-    page: 1,
-    imagesOnPage: 0,
-    totalImages: 0,
-    images: [],
-    error: null,
-    status: 'idle',
-  };
+export default memo(function App() {
+  const [query, setQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const [imagesOnPage, setImagesOnPage] = useState(0);
+  const [totalImages, setTotalImages] = useState(0);
+  const [images, setImages] = useState([]);
+  const [status, setStatus] = useState('idle');
 
-  componentDidUpdate(prevProps, prevState) {
-    const { query, page } = this.state;
-
-    if (
-      prevState.page !== this.state.page ||
-      prevState.query !== this.state.query
-    ) {
-      fetchImages(query, page)
-        .then(({ hits, totalHits }) => {
-          this.setState({ status: 'pending' });
-          if (hits.length === 0) {
-            toast.error(`No results for search ${query}`);
-            this.setState({ status: 'idle' });
-          }
-
-          this.setState(state => ({
-            images: [...state.images, ...hits],
-            imagesOnPage: state.imagesOnPage + hits.length,
-            totalImages: totalHits,
-            status: 'resolved',
-          }));
-        })
-        .catch(error => this.setState({ error, status: 'rejected' }));
+  useEffect(() => {
+    if (query === '') {
+      return;
     }
-  }
+    setStatus('pending');
+    fetchImages(query, page)
+      .then(({ hits, totalHits }) => {
+        if (hits.length === 0) {
+          toast.error(`No results for search ${query}`);
+          setStatus('idle');
+          return;
+        }
 
-  handleSearchbarSubmit = query => {
-    this.setState({
-      query,
-      page: 1,
-      images: [],
-      imagesOnPage: 0,
-      totalImages: 0,
+        setImages(prevState => [...prevState, ...hits]);
+        setTotalImages(totalHits);
+        setImagesOnPage(prevState => prevState + hits.length);
+        setStatus('resolved');
+      })
+      .catch(() => {
+        setStatus('rejected');
+      });
+  }, [query, page]);
+
+  useEffect(() => {
+    window.scrollTo({
+      top: document.documentElement.scrollHeight,
+      behavior: 'smooth',
     });
+  });
+
+  const handleSearchbarSubmit = query => {
+    setQuery(query);
+    setPage(1);
+    setImages([]);
+    setImagesOnPage(0);
+    setTotalImages(0);
   };
 
-  onLoadMore = () => {
-    this.setState(prevState => ({
-      page: prevState.page + 1,
-    }));
+  const onLoadMore = () => {
+    setPage(prevState => prevState + 1);
   };
 
-  render() {
-    const { query, images, imagesOnPage, totalImages, status } = this.state;
+  return (
+    <AppStyled>
+      <Searchbar onSubmit={handleSearchbarSubmit} />
+      {status === 'pending' && <Loader />}
+      {status === 'rejected' &&
+        toast.error(`Sum problems with search ${query}`)}
+      {status === 'resolved' && (
+        <>
+          <ImageGallery images={images} />
+          {imagesOnPage < totalImages && (
+            <Button onNextFetch={onLoadMore}>Load More</Button>
+          )}
+        </>
+      )}
 
-    const getSearchRequest = this.handleSearchbarSubmit;
-    const onNextFetch = this.onLoadMore;
-
-    return (
-      <AppStyled>
-        <Searchbar onSubmit={getSearchRequest} />
-        {status === 'pending' && <Loader />}
-        {status === 'rejected' &&
-          toast.error(`Sum problems with search ${query}`)}
-        {status === 'resolved' && <ImageGallery images={images} />}
-        {imagesOnPage < totalImages && (
-          <Button onNextFetch={onNextFetch}>Load More</Button>
-        )}
-        <ToastContainer autoClose={3000} />
-        <GlobalStyle />
-      </AppStyled>
-    );
-  }
-}
-
-export default App;
+      <ToastContainer autoClose={3000} />
+      <GlobalStyle />
+    </AppStyled>
+  );
+});

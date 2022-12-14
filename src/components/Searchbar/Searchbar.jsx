@@ -1,25 +1,16 @@
-import React, { Component } from 'react';
+import { useState, memo } from 'react';
 import PropTypes from 'prop-types';
 import { toast } from 'react-toastify';
 import { Header, Form, Button, ButtonLabel, Input } from './Searchbar.styled';
 import { AiOutlineSearch } from 'react-icons/ai';
-class Searchbar extends Component {
-  static propTypes = {
-    onSubmit: PropTypes.func.isRequired,
+function Searchbar({ onSubmit }) {
+  const [query, setQuery] = useState('');
+
+  const handleInputChange = event => {
+    setQuery(event.currentTarget.value.toLowerCase());
   };
 
-  state = {
-    query: '',
-  };
-
-  handleInputChange = event => {
-    this.setState({ query: event.currentTarget.value.toLowerCase() });
-  };
-
-  handleSubmit = event => {
-    const { onSubmit } = this.props;
-    const { query } = this.state;
-
+  const handleSubmit = event => {
     event.preventDefault();
 
     if (query.trim() === '') {
@@ -28,34 +19,34 @@ class Searchbar extends Component {
     }
 
     onSubmit(query);
-    this.setState({ query: '' });
+    setQuery('');
     event.target.reset();
   };
 
-  render() {
-    const { query } = this.state;
+  return (
+    <Header>
+      <Form onSubmit={handleSubmit}>
+        <Button type="submit">
+          <ButtonLabel>
+            <AiOutlineSearch size={30} />
+          </ButtonLabel>
+        </Button>
 
-    return (
-      <Header>
-        <Form onSubmit={this.handleSubmit}>
-          <Button type="submit">
-            <ButtonLabel>
-              <AiOutlineSearch size={30} />
-            </ButtonLabel>
-          </Button>
-
-          <Input
-            type="text"
-            value={query}
-            autoComplete="off"
-            autoFocus
-            placeholder="Search images and photos"
-            onChange={this.handleInputChange}
-          />
-        </Form>
-      </Header>
-    );
-  }
+        <Input
+          type="text"
+          value={query}
+          autoComplete="off"
+          autoFocus
+          placeholder="Search images and photos"
+          onChange={handleInputChange}
+        />
+      </Form>
+    </Header>
+  );
 }
 
-export default Searchbar;
+Searchbar.proptype = {
+  onSubmit: PropTypes.func.isRequired,
+};
+
+export default memo(Searchbar);
