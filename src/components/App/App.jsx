@@ -1,4 +1,4 @@
-import { useState, useEffect, memo } from 'react';
+import { useState, useEffect } from 'react';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { GlobalStyle } from '../GlobalStyle';
@@ -10,7 +10,7 @@ import Button from 'components/Button';
 import Loader from 'components/Loader';
 import { toast } from 'react-toastify';
 
-export default memo(function App() {
+export default function App() {
   const [query, setQuery] = useState('');
   const [page, setPage] = useState(1);
   const [imagesOnPage, setImagesOnPage] = useState(0);
@@ -31,22 +31,16 @@ export default memo(function App() {
           return;
         }
 
-        setImages(prevState => [...prevState, ...hits]);
+        setImages(prev => [...prev, ...hits]);
         setTotalImages(totalHits);
         setImagesOnPage(prevState => prevState + hits.length);
+
         setStatus('resolved');
       })
       .catch(() => {
         setStatus('rejected');
       });
   }, [query, page]);
-
-  useEffect(() => {
-    window.scrollTo({
-      top: document.documentElement.scrollHeight,
-      behavior: 'smooth',
-    });
-  });
 
   const handleSearchbarSubmit = query => {
     setQuery(query);
@@ -57,7 +51,7 @@ export default memo(function App() {
   };
 
   const onLoadMore = () => {
-    setPage(prevState => prevState + 1);
+    setPage(page => page + 1);
   };
 
   return (
@@ -65,7 +59,7 @@ export default memo(function App() {
       <Searchbar onSubmit={handleSearchbarSubmit} />
       {status === 'pending' && <Loader />}
       {status === 'rejected' &&
-        toast.error(`Sum problems with search ${query}`)}
+        toast.error(`Sum problems with search ${query} !`)}
       {status === 'resolved' && (
         <>
           <ImageGallery images={images} />
@@ -79,4 +73,4 @@ export default memo(function App() {
       <GlobalStyle />
     </AppStyled>
   );
-});
+}
